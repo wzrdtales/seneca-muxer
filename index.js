@@ -78,21 +78,21 @@ module.exports = function muxer(options) {
           // Entering this branch if we're handling the optional events
           if (
             _msg.maxRequestTime &&
-            _msg.maxRequestTime < new Date() - meta.startDate
+            _msg.maxRequestTime > new Date() - meta.startDate
           ) {
-            // maxRequestTime requires ALL events to resolve or
-            // the timeout to happen
-            const leftOptional = _msg.optionalEvents.filter(
-              event => actionSet.indexOf(event) === -1
-            ).length;
+            return null;
+          }
 
-            if (leftEvents === 0 && leftOptional === 0) {
-              store.incr(`${fireEvent}_fired`).then(fireCount => {
-                if (fireCount === 1) {
-                  this.act(_msg.fires, { msgs: actions.map(({ msg }) => msg) });
-                }
-              });
-            }
+          // maxRequestTime requires ALL events to resolve or
+          // the timeout to happen
+          const leftOptional = _msg.optionalEvents.filter(
+            event => actionSet.indexOf(event) === -1
+          ).length;
+
+          if (leftEvents === 0 && leftOptional === 0) {
+            store.incr(`${fireEvent}_fired`).then(fireCount => {
+              this.act(_msg.fires, { msgs: actions.map(({ msg }) => msg) });
+            });
           }
         }
       });
