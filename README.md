@@ -5,7 +5,7 @@
 [![npm version][npm-badge]][npm-url]
 [![Dependency Status][david-badge]][david-url]
 
-Lead Maintainers: [Tobias Gurtzck](https://github.com/wzrdtales) and [Christian Wolf](https://github.com/chris-wolf)
+Lead Maintainers: [Tobias Gurtzick](https://github.com/wzrdtales) and [Christian Wolf](https://github.com/chris-wolf)
 
 # seneca-muxer
 
