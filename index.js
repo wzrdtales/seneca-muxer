@@ -1,19 +1,10 @@
-// external driver source
-function set() {}
-function get() {}
+'use strict'
 
 const Promise = require("bluebird");
-const store = {
-  set: () => {},
-  get: () => {},
-  incr: () => {},
-  getAndSet: () => {},
-  addToSet: () => {}
-};
 
 module.exports = function muxer(options) {
-  //const plugin = require(options.driver);
-  //const store = new plugin(option.options);
+  const plugin = require(options.driver);
+  const store = new plugin(option.options);
   let events = [];
   let actions = [];
 
@@ -22,7 +13,7 @@ module.exports = function muxer(options) {
 
     return async msg => {
       // first thing add it
-      await store.addToSet(fireEvent, event);
+      await store.addToSet(fireEvent, JSON.stringify({ event: event, msg: this.clean(msg) }));
       const fireEvent = `${_msg.fires}_${Object.keys(msg.identifiedBy)
         .map(key => `${key}_${msg.identifiedBy[key]}`)
         .join("_")}`;
@@ -30,11 +21,14 @@ module.exports = function muxer(options) {
 
       return Promise.all([
         store.get(`${fireEvent}_fired`),
-        store.getSet(fireEvent)
-      ]).then(fireCount, actionSet => {
+        store.getSet(fireEvent).map(event => JSON.parse(event))
+      ]).then(fireCount, actions => {
         if (_msg.fireCount && fireCount > _msg.fireCount) {
           return Promise.reject("fired too often");
         }
+
+        // We first check if all Events have been submitted that are required
+        const actionSet = actions.map({event} => event)
         const leftEvents = msg.events.filter(
           event => actionSet.indexOf(event) === -1
         ).length;
@@ -43,28 +37,35 @@ module.exports = function muxer(options) {
           if (fireCount === 0 && leftEvents === 0) {
             // This tree will delay up to the maxRequestTime and maybe
             // fires if not all optional already fired
-            if (_msg.maxRequestTime > new Date() - meta.startDate) {
-              // This timeout better gets distributed, to be safe after crashes
+            const callDate = new Date() - meta.startDate;
+            if (_msg.maxRequestTime > callDate) {
+              // ToDo: This timeout better gets distributed, to be safe after crashes
+              store.set(`${fireEvent}_call`, callDate)
               setTimeout(() => {
+                store.delete(`${fireEvent}_call`)
                 store.incr(`${fireEvent}_fired`).then(fireCount => {
                   if (fireCount === 1) {
-                    this.act(fireEvent, this.clean(msg));
+                    this.act(fireEvent, actions.msg);
                   }
                 });
               }, new Date() - meta.startDate);
             } else {
+              // the default is ensure it has not been fired and fire
               store.incr(`${fireEvent}_fired`).then(fireCount => {
                 if (fireCount === 1) {
-                  this.act(fireEvent, this.clean(msg));
+                  this.act(fireEvent, actions.msg);
                 }
               });
             }
           }
         } else {
+          // Entering this branch if we're handling the optional events
           if (
             _msg.maxRequestTime &&
             _msg.maxRequestTime < new Date() - meta.startDate
           ) {
+            // maxRequestTime requires ALL events to resolve or
+            // the timeout to happen
             const leftOptional = msg.optionalEvents.filter(
               event => actionSet.indexOf(event) === -1
             ).length;
@@ -72,7 +73,7 @@ module.exports = function muxer(options) {
             if (leftEvents === 0 && leftOptional === 0) {
               store.incr(`${fireEvent}_fired`).then(fireCount => {
                 if (fireCount === 1) {
-                  this.act(fireEvent, this.clean(msg));
+                  this.act(fireEvent, actions.msg);
                 }
               });
             }
