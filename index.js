@@ -76,13 +76,6 @@ module.exports = function muxer(options) {
           }
         } else {
           // Entering this branch if we're handling the optional events
-          if (
-            _msg.maxRequestTime &&
-            _msg.maxRequestTime > new Date() - meta.startDate
-          ) {
-            return null;
-          }
-
           // maxRequestTime requires ALL events to resolve or
           // the timeout to happen
           const leftOptional = _msg.optionalEvents.filter(
