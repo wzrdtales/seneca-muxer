@@ -64,7 +64,7 @@ module.exports = function muxer(options) {
                     });
                   }
                 });
-              }, new Date() - meta.startDate);
+              }, _msg.maxRequestTime - callDate);
             } else {
               // the default is ensure it has not been fired and fire
               store.incr(`${fireEvent}_fired`).then(fireCount => {
@@ -91,7 +91,10 @@ module.exports = function muxer(options) {
 
           if (leftEvents === 0 && leftOptional === 0) {
             store.incr(`${fireEvent}_fired`).then(fireCount => {
-              this.act(_msg.fires, { msgs: actions.map(({ msg }) => msg) });
+              // if nothing was specified
+              if (!_msg.maxRequestTime || fireCount === 1) {
+                this.act(_msg.fires, { msgs: actions.map(({ msg }) => msg) });
+              }
             });
           }
         }
