@@ -1,6 +1,6 @@
 {
   "name": "seneca-muxer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An event muxer that helps synchronizing or simply aggregating events.",
   "main": "index.js",
   "scripts": {
