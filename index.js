@@ -2,8 +2,22 @@
 
 const Promise = require('bluebird');
 
+function loadPlugin(driver) {
+  if (typeof driver === 'string') {
+    try {
+      return require(driver);
+    } catch (err) {
+      return require(`seneca-muxer-${driver}`);
+    }
+  } else if (typeof driver === 'function') {
+    return driver;
+  }
+
+  throw new Error(`Passed driver is not a driver!`);
+}
+
 module.exports = function muxer(options) {
-  const plugin = require(options.driver);
+  const plugin = loadPlugin(options.driver);
   const store = plugin(options.options);
   let events = [];
   let actions = [];

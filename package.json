@@ -4,7 +4,7 @@
   "description": "An event muxer that helps synchronizing or simply aggregating events.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/lab -l -c"
   },
   "repository": {
     "type": "git",
@@ -26,15 +26,19 @@
   },
   "homepage": "https://github.com/wzrdtales/seneca-muxer#readme",
   "dependencies": {
-    "bluebird": "^3.5.1",
-    "seneca-muxer-redis": "^1.0.0"
+    "bluebird": "^3.5.1"
   },
   "devDependencies": {
+    "code": "^5.1.2",
     "eslint": "^4.10.0",
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-node": "^5.2.1",
     "eslint-plugin-promise": "^3.6.0",
     "eslint-plugin-standard": "^3.0.1",
-    "seneca": "^3.4.3"
+    "lab": "^15.1.2",
+    "proxyquire": "^1.8.0",
+    "redis-mock": "^0.20.0",
+    "seneca": "^3.4.3",
+    "sinon": "^4.1.1"
   }
 }
