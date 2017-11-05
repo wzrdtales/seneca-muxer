@@ -28,7 +28,7 @@ module.exports = function muxer(options) {
         }
 
         // We first check if all Events have been submitted that are required
-        const actionSet = actions.map({event} => event)
+        const actionSet = actions.map(({event}) => event)
         const leftEvents = msg.events.filter(
           event => actionSet.indexOf(event) === -1
         ).length;
