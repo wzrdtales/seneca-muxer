@@ -29,7 +29,7 @@ Now you can require the plugin and use it, like in the following example:
 'use strict';
 
 const seneca = require('seneca');
-seneca.use({
+seneca.use('muxer', {
   driver: 'seneca-muxer-redis'
 });
 
