@@ -1,0 +1,31 @@
+{
+  "name": "seneca-muxer",
+  "version": "1.0.0",
+  "description": "An event muxer that helps synchronizing or simply aggregating events.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wzrdtales/seneca-muxer.git"
+  },
+  "keywords": [
+    "seneca",
+    "plugin",
+    "event",
+    "muxer",
+    "aggregate",
+    "aggregation",
+    "muxing"
+  ],
+  "author": "Tobias Gurtzick <magic@wizardtales.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/wzrdtales/seneca-muxer/issues"
+  },
+  "homepage": "https://github.com/wzrdtales/seneca-muxer#readme",
+  "dependencies": {
+    "bluebird": "^3.5.1"
+  }
+}
