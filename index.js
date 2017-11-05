@@ -1,10 +1,10 @@
-'use strict'
+'use strict';
 
-const Promise = require("bluebird");
+const Promise = require('bluebird');
 
 module.exports = function muxer(options) {
   const plugin = require(options.driver);
-  const store = new plugin(option.options);
+  const store = plugin(options.options);
   let events = [];
   let actions = [];
 
@@ -13,23 +13,37 @@ module.exports = function muxer(options) {
 
     return async msg => {
       // first thing add it
-      await store.addToSet(fireEvent, JSON.stringify({ event: event, msg: this.clean(msg) }));
       const fireEvent = `${_msg.fires}_${Object.keys(msg.identifiedBy)
         .map(key => `${key}_${msg.identifiedBy[key]}`)
-        .join("_")}`;
-      const meta = await store.get(`${fireEvent}_meta`);
+        .join('_')}`;
+      await store.addToSet(
+        fireEvent,
+        JSON.stringify({ event: event, msg: this.util.clean(msg) })
+      );
+      const meta = await store.get(`${fireEvent}_meta`).then(meta => {
+        if (meta === null) {
+          meta = { startDate: new Date() };
+          store.set(`${fireEvent}_meta`, JSON.stringify(meta));
+          return meta;
+        }
+
+        meta = JSON.parse(meta);
+        meta.startDate = new Date(meta.startDate);
+        return meta;
+      });
 
       return Promise.all([
         store.get(`${fireEvent}_fired`),
         store.getSet(fireEvent).map(event => JSON.parse(event))
-      ]).then(fireCount, actions => {
+      ]).then(([fireCount, actions]) => {
+        fireCount = fireCount || 0;
         if (_msg.fireCount && fireCount > _msg.fireCount) {
-          return Promise.reject("fired too often");
+          return Promise.reject('fired too often');
         }
 
         // We first check if all Events have been submitted that are required
-        const actionSet = actions.map(({event}) => event)
-        const leftEvents = msg.events.filter(
+        const actionSet = actions.map(({ event }) => event);
+        const leftEvents = _msg.events.filter(
           event => actionSet.indexOf(event) === -1
         ).length;
 
@@ -40,12 +54,14 @@ module.exports = function muxer(options) {
             const callDate = new Date() - meta.startDate;
             if (_msg.maxRequestTime > callDate) {
               // ToDo: This timeout better gets distributed, to be safe after crashes
-              store.set(`${fireEvent}_call`, callDate)
+              store.set(`${fireEvent}_call`, callDate);
               setTimeout(() => {
-                store.delete(`${fireEvent}_call`)
+                store.delete(`${fireEvent}_call`);
                 store.incr(`${fireEvent}_fired`).then(fireCount => {
                   if (fireCount === 1) {
-                    this.act(fireEvent, actions.msg);
+                    this.act(_msg.fires, {
+                      msgs: actions.map(({ msg }) => msg)
+                    });
                   }
                 });
               }, new Date() - meta.startDate);
@@ -53,7 +69,7 @@ module.exports = function muxer(options) {
               // the default is ensure it has not been fired and fire
               store.incr(`${fireEvent}_fired`).then(fireCount => {
                 if (fireCount === 1) {
-                  this.act(fireEvent, actions.msg);
+                  this.act(_msg.fires, { msgs: actions.map(({ msg }) => msg) });
                 }
               });
             }
@@ -66,14 +82,14 @@ module.exports = function muxer(options) {
           ) {
             // maxRequestTime requires ALL events to resolve or
             // the timeout to happen
-            const leftOptional = msg.optionalEvents.filter(
+            const leftOptional = _msg.optionalEvents.filter(
               event => actionSet.indexOf(event) === -1
             ).length;
 
             if (leftEvents === 0 && leftOptional === 0) {
               store.incr(`${fireEvent}_fired`).then(fireCount => {
                 if (fireCount === 1) {
-                  this.act(fireEvent, actions.msg);
+                  this.act(_msg.fires, { msgs: actions.map(({ msg }) => msg) });
                 }
               });
             }
@@ -84,7 +100,7 @@ module.exports = function muxer(options) {
   };
 
   const createDuplicator = event => {
-    const actionSet = actions[events[event]];
+    const actionSet = actions[events.indexOf(event)];
     this.add(event, (msg, reply) => {
       reply(); // always async
       actionSet.forEach(action => {
@@ -96,22 +112,24 @@ module.exports = function muxer(options) {
   // registering holds the following arguments
   // events [], optionalEvents []
   // options: { maxRequestTime, preferLocal }
-  this.add("muxer:register", (msg, reply) => {
+  this.add('muxer:register', (msg, reply) => {
+    msg.optionalEvents = msg.optionalEvents || [];
     msg.events.concat(msg.optionalEvents).forEach(event => {
       let index = 0;
-      if (!this.has(event)) {
-        createDuplicator(event);
-      }
-
       if ((index = events.indexOf(event)) === -1) {
         index = events.push(event) - 1;
         actions[index] = new Set();
       }
 
       actions[index].add(createEventAction(event, msg));
+
+      if (!this.has(event)) {
+        createDuplicator(event);
+      }
+
       reply();
     });
   });
 
-  return "muxer";
+  return 'muxer';
 };
