@@ -2,15 +2,17 @@
 
 const Lab = require('lab');
 const lab = (exports.lab = Lab.script());
-const { before, it, describe } = lab;
+const { beforeEach, it, describe } = lab;
 const { expect } = require('code');
 const pquire = require('proxyquire').noPreserveCache();
 const Seneca = require('seneca');
 const redis = require('redis-mock');
 const Promise = require('bluebird');
+const sinon = require('sinon');
 
 const driver = options => {
   const client = redis.createClient(options);
+  client.flushall();
   Promise.promisifyAll(client);
 
   return {
@@ -35,7 +37,7 @@ const driver = options => {
   };
 };
 
-const si = Seneca();
+let si = Seneca();
 Promise.promisifyAll(si);
 
 si.use('../', {
@@ -43,15 +45,33 @@ si.use('../', {
 });
 
 function wrapAdd(pin) {
-  return new Promise(resolve => {
-    si.add(pin, (msg, reply) => {
-      reply();
-      resolve(msg);
-    });
+  let spy;
+  let promise = new Promise(resolve => {
+    si.add(
+      pin,
+      (spy = sinon.spy((msg, reply) => {
+        reply();
+        resolve(msg);
+      }))
+    );
   });
+
+  return {
+    spy,
+    promise
+  };
 }
 
 describe('Muxer', () => {
+  beforeEach(() => {
+    si = Seneca({ log: 'silent' });
+    Promise.promisifyAll(si);
+
+    si.use('../', {
+      driver: driver
+    });
+  });
+
   it('should call the target method when both events have been fired', async () => {
     si.act('muxer:register', {
       events: ['event1:test', 'event2:test'],
@@ -76,7 +96,111 @@ describe('Muxer', () => {
       });
     }, 50);
 
-    return action.then(msg => {
+    return action.promise.then(msg => {
+      msg = si.util.clean(msg);
+      expect(msg).to.equal({
+        msgs: [
+          {
+            event1: 'test',
+            identifiedBy: {
+              test: '1'
+            },
+            some: 'msg'
+          },
+          {
+            event2: 'test',
+            identifiedBy: {
+              test: '1'
+            },
+            someother: 'msg'
+          }
+        ],
+        validate: 'simple'
+      });
+    });
+  });
+
+  it('should call the target method when an event does not answer within the maxRequestTIme', async () => {
+    si.act('muxer:register', {
+      events: ['event1:test'],
+      optionalEvents: ['event2:test'],
+      fires: 'validate:simple',
+      maxRequestTime: 50
+    });
+
+    const action = wrapAdd('validate:simple');
+
+    si.act('event1:test', {
+      identifiedBy: {
+        test: '1'
+      },
+      some: 'msg'
+    });
+
+    const secondEvent = new Promise(resolve => {
+      setTimeout(() => {
+        si.act('event2:test', {
+          identifiedBy: {
+            test: '1'
+          },
+          someother: 'msg'
+        });
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      }, 200);
+    });
+
+    return action.promise
+      .then(msg => {
+        msg = si.util.clean(msg);
+        expect(msg).to.equal({
+          msgs: [
+            {
+              event1: 'test',
+              identifiedBy: {
+                test: '1'
+              },
+              some: 'msg'
+            }
+          ],
+          validate: 'simple'
+        });
+
+        return secondEvent;
+      })
+      .then(() => {
+        expect(action.spy.calledOnce).to.be.true();
+      });
+  });
+
+  it('should call and mux the target method when an event does answer within the maxRequestTIme', async () => {
+    si.act('muxer:register', {
+      events: ['event1:test'],
+      optionalEvents: ['event2:test'],
+      fires: 'validate:simple',
+      maxRequestTime: 100
+    });
+
+    const action = wrapAdd('validate:simple');
+
+    si.act('event1:test', {
+      identifiedBy: {
+        test: '1'
+      },
+      some: 'msg'
+    });
+
+    setTimeout(() => {
+      si.act('event2:test', {
+        identifiedBy: {
+          test: '1'
+        },
+        someother: 'msg'
+      });
+    }, 20);
+
+    return action.promise.then(msg => {
       msg = si.util.clean(msg);
       expect(msg).to.equal({
         msgs: [
