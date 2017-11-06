@@ -19,6 +19,8 @@ function loadPlugin(driver) {
 module.exports = function muxer(options) {
   const plugin = loadPlugin(options.driver);
   const store = plugin(options.options);
+  // ToDO: When this plugin becomes more sophisticated we probably
+  // want to replace these two with a map or similar
   let events = [];
   let actions = [];
 
@@ -34,6 +36,15 @@ module.exports = function muxer(options) {
         fireEvent,
         JSON.stringify({ event: event, msg: this.util.clean(msg) })
       );
+      // we retrieve or store meta properties, where we store system state
+      // this includes dates that may be used directly by the event i.e.
+      // when maxRequestTime tries to determine how long the request
+      // actually timed till now. While this date may differ in future
+      // versions, as a service wide maxRequestTime and service wide
+      // start datecould be passed by.
+      //
+      // More imporantly this stores the date of the creation together
+      // if available the state when items are destined to be cleaned up.
       const meta = await store.get(`${fireEvent}_meta`).then(meta => {
         if (meta === null) {
           meta = { startDate: new Date() };
@@ -50,7 +61,7 @@ module.exports = function muxer(options) {
         store.get(`${fireEvent}_fired`),
         store.getSet(fireEvent).map(event => JSON.parse(event))
       ]).then(([fireCount, actions]) => {
-        fireCount = fireCount || 0;
+        fireCount = Number(fireCount || 0);
         if (_msg.fireCount && fireCount > _msg.fireCount) {
           return Promise.reject('fired too often');
         }
@@ -98,7 +109,7 @@ module.exports = function muxer(options) {
 
           if (leftEvents === 0 && leftOptional === 0) {
             store.incr(`${fireEvent}_fired`).then(fireCount => {
-              // if nothing was specified
+              // if nothing was specified, act otherwise adjust
               if (!_msg.maxRequestTime || fireCount === 1) {
                 this.act(_msg.fires, { msgs: actions.map(({ msg }) => msg) });
               }
