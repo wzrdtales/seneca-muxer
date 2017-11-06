@@ -3,6 +3,7 @@
 
 # seneca-muxer
 [![npm version][npm-badge]][npm-url]
+[![Travis][BadgeTravis]][Travis]
 [![Dependency Status][david-badge]][david-url]
 
 Lead Maintainers: [Tobias Gurtzick](https://github.com/wzrdtales) and [Christian Wolf](https://github.com/chris-wolf)
@@ -49,3 +50,4 @@ seneca.act('muxer:register', {
 [npm-url]: https://badge.fury.io/js/seneca-muxer
 [david-badge]: https://david-dm.org/wzrdtales/seneca-muxer.svg
 [david-url]: https://david-dm.org/wzrdtales/seneca-muxer
+[Travis]: https://travis-ci.org/wzrdtales/seneca-muxer?branch=master
