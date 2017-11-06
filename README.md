@@ -42,6 +42,7 @@ seneca.act('muxer:register', {
   optionalEvents: [
     'event:that,is:optional'
   ],
+  fires: 'on:fire',
   maxRequestTime: 2000
 });
 ```
