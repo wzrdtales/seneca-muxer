@@ -44,14 +44,24 @@ si.use('../', {
   driver: driver
 });
 
-function wrapAdd(pin) {
+function wrapAdd(pin, counter = 0) {
+  let useCounter = !!counter;
+  let responses = counter === 0 ? '' : [];
   let spy;
   let promise = new Promise(resolve => {
     si.add(
       pin,
       (spy = sinon.spy((msg, reply) => {
         reply();
-        resolve(msg);
+        if (useCounter) {
+          responses.push(si.util.clean(msg));
+        } else {
+          responses = si.util.clean(msg);
+        }
+
+        if (!counter--) {
+          resolve(responses);
+        }
       }))
     );
   });
@@ -97,7 +107,6 @@ describe('Muxer', () => {
     }, 50);
 
     return action.promise.then(msg => {
-      msg = si.util.clean(msg);
       expect(msg).to.equal({
         msgs: [
           {
@@ -118,6 +127,79 @@ describe('Muxer', () => {
         validate: 'simple'
       });
     });
+  });
+
+  it('should call the target method twice when the optionalEvents answer', async () => {
+    si.act('muxer:register', {
+      events: ['event1:test'],
+      optionalEvents: ['event2:test'],
+      fires: 'validate:simple'
+    });
+
+    const action = wrapAdd('validate:simple', 1);
+
+    si.act('event1:test', {
+      identifiedBy: {
+        test: '1'
+      },
+      some: 'msg'
+    });
+
+    const secondEvent = new Promise(resolve => {
+      setTimeout(() => {
+        si.act('event2:test', {
+          identifiedBy: {
+            test: '1'
+          },
+          someother: 'msg'
+        });
+        setTimeout(() => {
+          resolve();
+        }, 100);
+      }, 200);
+    });
+
+    return action.promise
+      .then(msg => {
+        expect(msg).to.equal([
+          {
+            msgs: [
+              {
+                event1: 'test',
+                identifiedBy: {
+                  test: '1'
+                },
+                some: 'msg'
+              }
+            ],
+            validate: 'simple'
+          },
+          {
+            msgs: [
+              {
+                event1: 'test',
+                identifiedBy: {
+                  test: '1'
+                },
+                some: 'msg'
+              },
+              {
+                event2: 'test',
+                identifiedBy: {
+                  test: '1'
+                },
+                someother: 'msg'
+              }
+            ],
+            validate: 'simple'
+          }
+        ]);
+
+        return secondEvent;
+      })
+      .then(() => {
+        expect(action.spy.calledTwice).to.be.true();
+      });
   });
 
   it('should call the target method when an event does not answer within the maxRequestTIme', async () => {
@@ -153,7 +235,6 @@ describe('Muxer', () => {
 
     return action.promise
       .then(msg => {
-        msg = si.util.clean(msg);
         expect(msg).to.equal({
           msgs: [
             {
@@ -201,7 +282,6 @@ describe('Muxer', () => {
     }, 20);
 
     return action.promise.then(msg => {
-      msg = si.util.clean(msg);
       expect(msg).to.equal({
         msgs: [
           {
