@@ -50,4 +50,5 @@ seneca.act('muxer:register', {
 [npm-url]: https://badge.fury.io/js/seneca-muxer
 [david-badge]: https://david-dm.org/wzrdtales/seneca-muxer.svg
 [david-url]: https://david-dm.org/wzrdtales/seneca-muxer
+[BadgeTravis]: https://travis-ci.org/wzrdtales/seneca-muxer.svg?branch=master
 [Travis]: https://travis-ci.org/wzrdtales/seneca-muxer?branch=master
