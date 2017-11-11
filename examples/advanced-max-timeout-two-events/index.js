@@ -41,7 +41,7 @@ seneca.add('testing:testme', (msg, reply) => {
     }, 5000);
   }
 
-  setTimeout(() => process.exit(0), 7000); //finally terminating
+  setTimeout(() => process.exit(0), 7000); // finally terminating
   reply();
 });
 

@@ -4,7 +4,6 @@ const Lab = require('lab');
 const lab = (exports.lab = Lab.script());
 const { beforeEach, it, describe } = lab;
 const { expect } = require('code');
-const pquire = require('proxyquire').noPreserveCache();
 const Seneca = require('seneca');
 const redis = require('redis-mock');
 const Promise = require('bluebird');
@@ -44,7 +43,7 @@ si.use('../', {
   driver: driver
 });
 
-function wrapAdd(pin, counter = 0) {
+function wrapAdd (pin, counter = 0) {
   let useCounter = !!counter;
   let responses = counter === 0 ? '' : [];
   let spy;

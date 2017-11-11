@@ -4,7 +4,7 @@
   "description": "An event muxer that helps synchronizing or simply aggregating events.",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/lab -l -c"
+    "test": "./node_modules/.bin/lab -L -c"
   },
   "repository": {
     "type": "git",

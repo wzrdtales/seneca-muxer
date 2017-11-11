@@ -9,8 +9,8 @@ seneca.use(require('../../'), {
 // define our final event
 seneca.add('testing:testme', (msg, reply) => {
   console.log('Have been called!', msg);
-  process.exit(0);
   reply();
+  process.exit(0);
 });
 
 const dt = new Date();

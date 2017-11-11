@@ -63,7 +63,7 @@ module.exports = function muxer (options) {
       ]).then(([fireCount, actions]) => {
         fireCount = Number(fireCount || 0);
         if (_msg.fireCount && fireCount > _msg.fireCount) {
-          return Promise.reject('fired too often');
+          return Promise.reject(new Error('fired too often'));
         }
 
         // We first check if all Events have been submitted that are required
