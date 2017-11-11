@@ -2,7 +2,7 @@
 
 const Promise = require('bluebird');
 
-function loadPlugin(driver) {
+function loadPlugin (driver) {
   if (typeof driver === 'string') {
     try {
       return require(driver);
@@ -16,7 +16,7 @@ function loadPlugin(driver) {
   throw new Error(`Passed driver is not a driver!`);
 }
 
-module.exports = function muxer(options) {
+module.exports = function muxer (options) {
   const plugin = loadPlugin(options.driver);
   const store = plugin(options.options);
   // ToDO: When this plugin becomes more sophisticated we probably
