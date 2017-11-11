@@ -11,8 +11,8 @@ Lead Maintainers: [Tobias Gurtzick](https://github.com/wzrdtales) and [Christian
 # seneca-muxer
 
 This module is a plugin for the Seneca framework. It provides muxing capabilities to combine different
-messages and events into a single event that an indefinite amount of clients listens to. This shal help
-when synchronizing asynchrounus actions coming from across your microservice landscape.
+messages and events into a single event that an indefinite amount of clients listens to. This helps
+when synchronizing asynchronous actions coming from across your microservice landscape.
 
 # Usage
 
